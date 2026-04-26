@@ -5,7 +5,7 @@ from temporalio.client import Client
 from temporalio.worker import Worker
 
 from shared.workflow import FileWorkflow
-from activities import read_file, write_file, call_rest
+from activities import read_file, write_file, call_rest, run_cli
 
 
 async def wait_for_temporal() -> Client:
@@ -34,7 +34,7 @@ async def main():
         client,
         task_queue="queue",
         workflows=[FileWorkflow],
-        activities=[read_file, write_file, call_rest],
+        activities=[read_file, write_file, call_rest, run_cli],
         activity_executor=ThreadPoolExecutor(max_workers=10),
     )
 

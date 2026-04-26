@@ -14,15 +14,24 @@ class FileWorkflow:
             start_to_close_timeout=timedelta(seconds=10),
         )
 
-        processed = await workflow.execute_activity(
-            "call_rest",
+        processed_cli = await workflow.execute_activity(
+            "run_cli",
             text,
+            start_to_close_timeout=timedelta(seconds=10),
+        )
+
+        enriched = await workflow.execute_activity(
+            "call_rest",
+            processed_cli,
             start_to_close_timeout=timedelta(seconds=20),
         )
 
         await workflow.execute_activity(
             "write_file",
-            {"path": f"{base_path}/output.txt", "content": processed},
+            {
+                "path": f"{base_path}/output.txt",
+                "content": enriched,
+            },
             start_to_close_timeout=timedelta(seconds=10),
         )
 

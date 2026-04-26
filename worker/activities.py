@@ -1,4 +1,5 @@
 import os
+import subprocess 
 
 import requests
 from temporalio import activity
@@ -26,3 +27,14 @@ def write_file(data: dict) -> str:
     with open(data["path"], "w", encoding="utf-8") as f:
         f.write(data["content"])
     return data["path"]
+
+@activity.defn
+def run_cli(input_text: str) -> str:
+    result = subprocess.run(
+        ["tr", "a-z", "A-Z"],
+        input=input_text,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return result.stdout.strip()

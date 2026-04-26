@@ -4,9 +4,10 @@
 
 This PoC demonstrates a Temporal workflow that:
 
-1. Reads an input file
-2. Calls an external REST API
-3. Writes the processed result to disk
+1. Reads an input file  from disk
+2. Executes a local CLI command  
+3. Calls an external REST API  
+4. Writes the processed result to disk  
 
 ---
 
