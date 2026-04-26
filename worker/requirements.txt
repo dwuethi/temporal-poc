@@ -1,2 +1,3 @@
 temporalio
 requests
+boto3

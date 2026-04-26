@@ -3,7 +3,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY shared ./shared
-COPY client/client.py .
+COPY client .
 
 RUN pip install temporalio
 

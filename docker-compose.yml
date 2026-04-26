@@ -29,6 +29,43 @@ services:
     ports:
       - "8233:8080"
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "until mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 2; done
+      && mc mb --ignore-existing local/interlis-input
+      && mc mb --ignore-existing local/interlis-output
+      && mc cp /data/samples/RoadsSimple.xtf local/interlis-input/RoadsSimple.xtf
+      && mc cp /data/samples/RoadsSimple.ili local/interlis-input/RoadsSimple.ili"
+    volumes:
+      - ./data:/data
+
+  minio-client:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    entrypoint: ["mc"]
+    volumes:
+      - ./data:/data
+
   worker:
     build:
       context: .
@@ -38,11 +75,46 @@ services:
     volumes:
       - ./data:/data
 
+  ilivalidator-worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    depends_on:
+      temporal:
+        condition: service_started
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_DEFAULT_REGION: us-east-1
+      S3_ENDPOINT_URL: http://minio:9000
+    volumes:
+      - ./data:/data
+    command: ["python", "ilivalidator_worker.py"]
+
   client:
     build:
       context: .
       dockerfile: client/Dockerfile
     depends_on:
-      - temporal
+      temporal:
+        condition: service_started
+      minio:
+        condition: service_started
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_DEFAULT_REGION: us-east-1
+      S3_ENDPOINT_URL: http://minio:9000
+      S3_SOURCE_BUCKET: interlis-input
+      S3_TARGET_BUCKET: interlis-output
     volumes:
       - ./data:/data
+
+volumes:
+  minio-data:
